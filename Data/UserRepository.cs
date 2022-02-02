@@ -75,6 +75,17 @@ namespace lfg
             return response;
         }
 
+        public async Task<ServiceResponse<PublicUserDto>> GetUserById(int id)
+        {
+            ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
+
+            User user = await _context.Users.FirstOrDefaultAsync(x => x.Id == id);
+
+            response.Data = MapUserToPublicUser(user);
+           
+            return response;
+        }
+
         public async Task<bool> UserExists(string username)
         {
             if (await _context.Users.AnyAsync(x => x.Username.ToLower() == username.ToLower()))
