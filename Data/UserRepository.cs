@@ -86,6 +86,42 @@ namespace lfg
             return response;
         }
 
+        public async Task<ServiceResponse<PublicUserDto>> UpdateUser(UpdateUserDto updatedUser)
+        {
+            byte [] newHash = new byte [] {};
+            byte [] newSalt = new byte [] {};
+            ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
+
+            User userToUpdate = await _context.Users.FirstOrDefaultAsync(u => u.Id == updatedUser.Id);
+
+            if(userToUpdate == null)
+            {
+                response.Message = "User not found";
+                response.Success = false;
+                return response;
+            }
+
+            if(!VerifyPasswordHash(updatedUser.Password, userToUpdate.PasswordHash, userToUpdate.PasswordSalt))
+            {
+                CreatePasswordHash(updatedUser.Password, out byte[] passwordHash, out byte[] passwordSalt);
+                newHash = passwordHash;
+                newSalt = passwordSalt;
+            }
+
+            if(newHash.Length != 0)
+                userToUpdate.PasswordHash = newHash;
+            
+            if(newSalt.Length != 0)
+            userToUpdate.PasswordSalt = newSalt;
+
+            _context.Users.Update(userToUpdate);
+            _context.SaveChangesAsync();
+
+            response.Data = MapUserToPublicUser(userToUpdate);
+
+            return response;
+        }
+
         public async Task<bool> UserExists(string username)
         {
             if (await _context.Users.AnyAsync(x => x.Username.ToLower() == username.ToLower()))
