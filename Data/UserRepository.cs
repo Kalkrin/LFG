@@ -86,13 +86,13 @@ namespace lfg
             return response;
         }
 
-        public async Task<ServiceResponse<PublicUserDto>> UpdateUser(UpdateUserDto updatedUser)
+        public async Task<ServiceResponse<PublicUserDto>> UpdateUser(int id, UpdateUserDto updatedUser)
         {
             byte [] newHash = new byte [] {};
             byte [] newSalt = new byte [] {};
             ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
 
-            User userToUpdate = await _context.Users.FirstOrDefaultAsync(u => u.Id == updatedUser.Id);
+            User userToUpdate = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
 
             if(userToUpdate == null)
             {
@@ -114,10 +114,30 @@ namespace lfg
             if(newSalt.Length != 0)
             userToUpdate.PasswordSalt = newSalt;
 
+            userToUpdate.Username = updatedUser.Username;
+            userToUpdate.Email = updatedUser.Email;
+            userToUpdate.FirstName = updatedUser.FirstName;
+            userToUpdate.LastName = updatedUser.LastName;
+            userToUpdate.Bio = updatedUser.Bio;
+            userToUpdate.ProfilePicture = updatedUser.ProfilePicture;
+            userToUpdate.LastUpdated = DateTime.Now;
+
             _context.Users.Update(userToUpdate);
-            _context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
 
             response.Data = MapUserToPublicUser(userToUpdate);
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<int>> DeleteUser(int id)
+        {
+            ServiceResponse<int> response = new ServiceResponse<int>();
+
+            _context.Remove(await _context.Users.FirstOrDefaultAsync(u => u.Id == id));
+            await _context.SaveChangesAsync();
+
+            response.Data = id;
 
             return response;
         }

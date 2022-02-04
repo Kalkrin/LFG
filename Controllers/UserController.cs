@@ -55,16 +55,44 @@ namespace lfg
         public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto updatedUser, int id)
         {
             ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
+            
             try
             {
-                if(id != updatedUser.Id)
+                if(User.FindFirst(ClaimTypes.NameIdentifier).Value != id.ToString())
                 {
                     response.Success = false;
-                    response.Message = "ID of User provided does not match the ID of the user to be updated";
-                    return BadRequest(response);
+                    response.Message = "provided ID does not belong to the current user";
+                    return BadRequest(response);    
                 }
+                response = await _UserRepository.UpdateUser(id, updatedUser);
+                
+                if(!response.Success)
+                    return BadRequest(response);
 
-                response = await _UserRepository.UpdateUser(updatedUser);
+            }
+            catch(Exception e)
+            {
+                response.Success = false;
+                response.Message = e.Message.ToString();
+            }
+
+            return Ok(response);
+        }
+
+        [HttpDelete("DeleteUser/{id}")]
+        public async Task<IActionResult> DeleteUser(int id)
+        {
+             ServiceResponse<int> response = new ServiceResponse<int>();
+            
+            try
+            {
+                if(User.FindFirst(ClaimTypes.NameIdentifier).Value != id.ToString())
+                {
+                    response.Success = false;
+                    response.Message = "provided ID does not belong to the current user";
+                    return BadRequest(response);    
+                }
+                response = await _UserRepository.DeleteUser(id);
                 
                 if(!response.Success)
                     return BadRequest(response);
