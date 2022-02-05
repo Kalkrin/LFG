@@ -22,66 +22,102 @@ namespace lfg
         public async Task<ServiceResponse<string>> Login(string username, string password)
         {
             ServiceResponse<string> response = new ServiceResponse<string>();
+            
+            try
+            {
+                User user = await _context.Users.FirstOrDefaultAsync(x => x.Username.ToLower().Equals(username.ToLower()));
 
-            User user = await _context.Users.FirstOrDefaultAsync(x => x.Username.ToLower().Equals(username.ToLower()));
+                if (user == null)
+                {
+                    response.Success = false;
+                    response.Message = "User not found";
+                }
+                else if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
+                {
+                    response.Success = false;
+                    response.Message = "Wrong password";
+                }
+                else
+                {
+                    response.Data = CreateToken(user);
+                }
 
-            if (user == null)
+            }
+            catch (Exception e)
             {
                 response.Success = false;
-                response.Message = "User not found";
+                response.Message = e.Message;
             }
-            else if (!VerifyPasswordHash(password, user.PasswordHash, user.PasswordSalt))
-            {
-                response.Success = false;
-                response.Message = "Wrong password";
-            }
-            else
-            {
-                response.Data = CreateToken(user);
-            }
-
+           
             return response;
         }
 
         public async Task<ServiceResponse<int>> Register(User user, string password)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
-            if (await UserExists(user.Username))
+            try
+            {
+                if (await UserExists(user.Username))
+                {
+                    response.Success = false;
+                    response.Message = "User Already Exists";
+                    return response;
+                }
+                CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt);
+
+                user.PasswordHash = passwordHash;
+                user.PasswordSalt = passwordSalt;
+                user.CreatedAt = DateTime.Now;
+                user.LastUpdated = DateTime.Now;
+
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+                response.Data = user.Id;
+            }
+            catch (Exception e) 
             {
                 response.Success = false;
-                response.Message = "User Already Exists";
-                return response;
+                response.Message = e.Message;
             }
-            CreatePasswordHash(password, out byte[] passwordHash, out byte[] passwordSalt);
-
-            user.PasswordHash = passwordHash;
-            user.PasswordSalt = passwordSalt;
-            user.CreatedAt = DateTime.Now;
-            user.LastUpdated = DateTime.Now;
-
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
-            response.Data = user.Id;
+            
             return response;
         }
 
         public async Task<ServiceResponse<List<PublicUserDto>>> GetAllUsers()
         {
             ServiceResponse<List<PublicUserDto>> response = new ServiceResponse<List<PublicUserDto>>();
-            List<User> users = await _context.Users.ToListAsync();
+            try
+            {
+                List<User> users = await _context.Users.ToListAsync();
 
-            response.Data = users.Select(u => MapUserToPublicUser(u)).ToList<PublicUserDto>();
+                response.Data = users.Select(u => MapUserToPublicUser(u)).ToList<PublicUserDto>();
 
+            }
+            catch (Exception e)
+            {
+                response.Success = false;
+                response.Message = e.Message;
+            }
+            
             return response;
         }
 
         public async Task<ServiceResponse<PublicUserDto>> GetUserById(int id)
         {
             ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
+            try
+            {
+                User user = await _context.Users.FirstOrDefaultAsync(x => x.Id == id);
 
-            User user = await _context.Users.FirstOrDefaultAsync(x => x.Id == id);
+                response.Data = MapUserToPublicUser(user);
+            }
+            catch (Exception e)
+            {
+                response.Success = false;
+                response.Message = e.Message;
+            }
 
-            response.Data = MapUserToPublicUser(user);
+            
            
             return response;
         }
@@ -91,41 +127,48 @@ namespace lfg
             byte [] newHash = new byte [] {};
             byte [] newSalt = new byte [] {};
             ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
-
-            User userToUpdate = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
-
-            if(userToUpdate == null)
+            try
             {
-                response.Message = "User not found";
+              User userToUpdate = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+                if(userToUpdate == null)
+                {
+                    response.Message = "User not found";
+                    response.Success = false;
+                    return response;
+                }
+
+                if(!VerifyPasswordHash(updatedUser.Password, userToUpdate.PasswordHash, userToUpdate.PasswordSalt))
+                {
+                    CreatePasswordHash(updatedUser.Password, out byte[] passwordHash, out byte[] passwordSalt);
+                    newHash = passwordHash;
+                    newSalt = passwordSalt;
+                }
+
+                if(newHash.Length != 0)
+                    userToUpdate.PasswordHash = newHash;
+                
+                if(newSalt.Length != 0)
+                userToUpdate.PasswordSalt = newSalt;
+
+                userToUpdate.Username = updatedUser.Username;
+                userToUpdate.Email = updatedUser.Email;
+                userToUpdate.FirstName = updatedUser.FirstName;
+                userToUpdate.LastName = updatedUser.LastName;
+                userToUpdate.Bio = updatedUser.Bio;
+                userToUpdate.ProfilePicture = updatedUser.ProfilePicture;
+                userToUpdate.LastUpdated = DateTime.Now;
+
+                _context.Users.Update(userToUpdate);
+                await _context.SaveChangesAsync();
+
+                response.Data = MapUserToPublicUser(userToUpdate);   
+            }
+            catch (Exception e)
+            {
                 response.Success = false;
-                return response;
+                response.Message = e.Message;
             }
-
-            if(!VerifyPasswordHash(updatedUser.Password, userToUpdate.PasswordHash, userToUpdate.PasswordSalt))
-            {
-                CreatePasswordHash(updatedUser.Password, out byte[] passwordHash, out byte[] passwordSalt);
-                newHash = passwordHash;
-                newSalt = passwordSalt;
-            }
-
-            if(newHash.Length != 0)
-                userToUpdate.PasswordHash = newHash;
-            
-            if(newSalt.Length != 0)
-            userToUpdate.PasswordSalt = newSalt;
-
-            userToUpdate.Username = updatedUser.Username;
-            userToUpdate.Email = updatedUser.Email;
-            userToUpdate.FirstName = updatedUser.FirstName;
-            userToUpdate.LastName = updatedUser.LastName;
-            userToUpdate.Bio = updatedUser.Bio;
-            userToUpdate.ProfilePicture = updatedUser.ProfilePicture;
-            userToUpdate.LastUpdated = DateTime.Now;
-
-            _context.Users.Update(userToUpdate);
-            await _context.SaveChangesAsync();
-
-            response.Data = MapUserToPublicUser(userToUpdate);
 
             return response;
         }
@@ -133,11 +176,17 @@ namespace lfg
         public async Task<ServiceResponse<int>> DeleteUser(int id)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
-
-            _context.Remove(await _context.Users.FirstOrDefaultAsync(u => u.Id == id));
-            await _context.SaveChangesAsync();
-
-            response.Data = id;
+            try
+            {
+                _context.Remove(await _context.Users.FirstOrDefaultAsync(u => u.Id == id));
+                await _context.SaveChangesAsync();
+                response.Data = id;
+            }
+            catch (Exception e)
+            {
+                response.Success = false;
+                response.Message = e.Message;
+            }
 
             return response;
         }
