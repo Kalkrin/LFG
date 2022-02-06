@@ -40,8 +40,15 @@ namespace lfg.Data
             ServiceResponse<Game> response = new ServiceResponse<Game>();
 
             try
-            {
+            {   
                 response.Data = await _context.Games.FirstOrDefaultAsync(g => g.Id == id);    
+                if(response.Data == null)
+                {
+                    response.Success = false;
+                    response.Message = "Game with the provided ID doesn't exist";
+
+                    return response;
+                }
             }
             catch (Exception e)
             {
@@ -92,16 +99,22 @@ namespace lfg.Data
 
             try
             {
-                Game gameToUpdate = (Game) _context.Games.Where(g => g.Id == id).SelectMany(g => g.Players);
+                Game gameToUpdate = await _context.Games.Include(g => g.Players).FirstOrDefaultAsync(g => g.Id == id);
+
+                if(gameToUpdate == null)
+                {
+                    response.Success = false;
+                    response.Message = "Game with the provided ID doesn't exist";
+                    return response;
+                }
 
                 gameToUpdate.Description = updatedGame.Description;
                 gameToUpdate.Name = updatedGame.Name;
-                gameToUpdate.Players = updatedGame.Players;
                 gameToUpdate.Thumbnail = updatedGame.Thumbnail;
                 gameToUpdate.LastEdited = DateTime.Now;
 
                 _context.Update(gameToUpdate);
-                _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
                 response.Data = gameToUpdate;
             } catch (Exception e)
@@ -113,12 +126,90 @@ namespace lfg.Data
             return response;
         }
 
+        public async Task<ServiceResponse<PublicGameDto>> RemovePlayerFromGame(int playerId, int gameId)
+        {
+            ServiceResponse<PublicGameDto> response = new ServiceResponse<PublicGameDto>();
+
+            try
+            {
+                Game gameToUpdate = await _context.Games.Include(g => g.Players).FirstOrDefaultAsync(g => g.Id == gameId);
+
+                User playerToRemove = gameToUpdate.Players.FirstOrDefault(p => p.Id == playerId);
+
+                if(gameToUpdate == null || playerToRemove == null)
+                {   
+                    response.Success = false;
+
+                    if(gameToUpdate == null)
+                        response.Message = "Game with provided id not found";
+                    if(playerToRemove == null)
+                        response.Message = "Player with the provided id not found";
+
+                    return response;
+                }
+
+                gameToUpdate.Players.Remove(playerToRemove);
+
+                _context.Games.Update(gameToUpdate);
+                await _context.SaveChangesAsync();
+
+                response.Data = MapGameToPublicGame(gameToUpdate);
+            }
+            catch (Exception e)
+            {
+                response.Success = false;
+                response.Message = e.Message;
+            }
+
+            return response;
+        }
+
+        public async Task<ServiceResponse<PublicGameDto>> AddPlayerToGame(int playerId, int gameId)
+        {
+            ServiceResponse<PublicGameDto> response = new ServiceResponse<PublicGameDto>();
+
+            try
+            {
+                Game gameToAddPlayerTo = await _context.Games.Include(g => g.Players).FirstOrDefaultAsync(g => g.Id == gameId);
+
+                User playerToBeAddedToGame = await _context.Users.FirstOrDefaultAsync(u => u.Id == playerId);
+
+                if(gameToAddPlayerTo == null || playerToBeAddedToGame == null)
+                {   
+                    response.Success = false;
+
+                    if(gameToAddPlayerTo == null)
+                        response.Message = "Game with provided id not found";
+                    if(playerToBeAddedToGame == null)
+                        response.Message = "Player with the provided id not found";
+
+                    return response;
+                }
+                
+                gameToAddPlayerTo.Players.Add(playerToBeAddedToGame);
+                _context.Games.Update(gameToAddPlayerTo);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception e)
+            {
+                response.Success = false;
+                response.Message = e.Message;
+            }
+            
+            return response; 
+        }
+
         public async Task<ServiceResponse<int>> DeleteGame(int id)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
             try
             {
+                if(await _context.Games.FirstOrDefaultAsync(g => g.Id == id) == null)
+                {
+
+                }
                 _context.Games.Remove(await _context.Games.FirstOrDefaultAsync(g => g.Id == id));
+
                 await _context.SaveChangesAsync();
             }
             catch (Exception e)
