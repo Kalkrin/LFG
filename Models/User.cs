@@ -16,6 +16,7 @@ namespace lfg.Models
         public string? ProfilePicture { get; set; }
         public string? Bio { get; set; }
         public List<Game> Games { get; set; }
+        public List<Request> Requests { get; set; }
         public DateTime CreatedAt {get; set;}
         public DateTime LastUpdated { get; set; }
     }

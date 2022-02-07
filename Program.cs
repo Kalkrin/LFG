@@ -19,6 +19,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<DataContext>(x => x.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<GameRepository>();
+builder.Services.AddScoped<RequestRepository>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {

@@ -10,6 +10,7 @@ namespace lfg.Models
         public string? Thumbnail { get; set; }
         public int Creator { get; set; } 
         public List<User> Players { get; set; }
+        public List<Request> Requests { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime LastEdited { get; set; }
     }

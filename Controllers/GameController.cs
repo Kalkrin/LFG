@@ -30,7 +30,7 @@ namespace lfg
                 return BadRequest(response);
         }  
 
-        [Authorize]
+        [HttpPost]
         public async Task<IActionResult> AddGame(AddGameDto gameToAdd)
         {
             ServiceResponse<Game> response = new ServiceResponse<Game>();
