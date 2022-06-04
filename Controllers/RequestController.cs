@@ -21,13 +21,13 @@ namespace lfg
         [HttpGet]
         public async Task<IActionResult> GetAllRequests()
         {
-            ServiceResponse<List<Request>> response = await _RequestRepository.GetAllRequestsAsync();
+            ServiceResponse<List<Request>> response = await _RequestRepository.GetAllRequests();
 
             return Ok(response);
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateRequestAsync(CreateRequestDto request)
+        public async Task<IActionResult> CreateRequest(CreateRequestDto request)
         {
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
 

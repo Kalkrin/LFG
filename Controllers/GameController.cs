@@ -28,16 +28,46 @@ namespace lfg
                 return Ok(response);
             else
                 return BadRequest(response);
-        }  
+        }
+
+        [HttpGet("GetById/{id}")]
+        public async Task<IActionResult> GetGameById(int id)
+        {
+            ServiceResponse<Game> response = new ServiceResponse<Game>();
+
+            response = await _GameRepository.GetGameById(id);
+
+            if(response.Success)
+                return Ok(response);
+            else
+                return BadRequest(response);
+        }
 
         [HttpPost]
         public async Task<IActionResult> AddGame(AddGameDto gameToAdd)
         {
-            ServiceResponse<Game> response = new ServiceResponse<Game>();
+            ServiceResponse<PublicGameDto> response = new ServiceResponse<PublicGameDto>();
 
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
             response = await _GameRepository.CeateGame(gameToAdd, userId);
+
+            if(response.Success)
+                return Ok(response);
+            else 
+                return BadRequest(response);
+        }
+
+        [HttpPut("UpdateGame/{id}")]
+        public async Task<IActionResult> UpdateGame([FromBody] UpdateGameDto updatedGame, int id)
+        {
+            ServiceResponse<PublicGameDto> response = new ServiceResponse<PublicGameDto>();
+
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            updatedGame.Id = id;
+
+            response = await _GameRepository.UpdateGame(updatedGame);
 
             if(response.Success)
                 return Ok(response);

@@ -12,12 +12,16 @@ namespace lfg
             _context = context;
         }
 
-        public async Task<ServiceResponse<List<Request>>> GetAllRequestsAsync()
+        public async Task<ServiceResponse<List<Request>>> GetAllRequests()
         {
             ServiceResponse<List<Request>> response = new ServiceResponse<List<Request>>();
             try
             {
-                response.Data = await _context.Requests.ToListAsync();
+                List<Request> requests = new List<Request>();
+
+                requests = await _context.Requests.Include(r => r.Game).Include(r => r.Requestor).ToListAsync();
+
+                response.Data = requests;
             }
             catch (Exception e)
             {
@@ -48,7 +52,8 @@ namespace lfg
             }
             catch (Exception e)
             {
-                
+                response.Message = e.Message;
+                response.Success = false;
             }
 
             return response;
