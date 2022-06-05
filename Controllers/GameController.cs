@@ -67,7 +67,22 @@ namespace lfg
 
             updatedGame.Id = id;
 
-            response = await _GameRepository.UpdateGame(updatedGame);
+            response = await _GameRepository.UpdateGame(updatedGame, userId);
+
+            if(response.Success)
+                return Ok(response);
+            else 
+                return BadRequest(response);
+        }
+
+        [HttpDelete("DeleteGame/{id}")]
+        public async Task<IActionResult> DeleteGame(int id)
+        {
+            ServiceResponse<int> response = new ServiceResponse<int>();
+
+            int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+            response = await _GameRepository.DeleteGame(id, userId);
 
             if(response.Success)
                 return Ok(response);

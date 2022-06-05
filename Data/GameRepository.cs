@@ -8,7 +8,7 @@ namespace lfg.Data
     {
         private readonly DataContext _context;
         private readonly UserRepository _userRepository;
-        public GameRepository(DataContext context, UserRepository userRepository, IConfiguration configuration)
+        public GameRepository(DataContext context, UserRepository userRepository)
         {
             _context = context;
             _userRepository = userRepository;
@@ -93,7 +93,7 @@ namespace lfg.Data
             return response;
         }
 
-        public async Task<ServiceResponse<PublicGameDto>> UpdateGame(UpdateGameDto updatedGame)
+        public async Task<ServiceResponse<PublicGameDto>> UpdateGame(UpdateGameDto updatedGame, int currentUserId)
         {
             ServiceResponse<PublicGameDto> response = new ServiceResponse<PublicGameDto>();
 
@@ -105,6 +105,12 @@ namespace lfg.Data
                 {
                     response.Success = false;
                     response.Message = "Game with the provided ID doesn't exist";
+                    return response;
+                }
+
+                if(currentUserId != gameToUpdate.Creator){
+                    response.Success = false;
+                    response.Message = "Game does not belong to the user currently signed in.";
                     return response;
                 }
 
@@ -150,18 +156,33 @@ namespace lfg.Data
             return response;
         }
 
-        public async Task<ServiceResponse<int>> DeleteGame(int id)
+        public async Task<ServiceResponse<int>> DeleteGame(int gameId, int userId)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
+            Game gameToRemove = await _context.Games.FirstOrDefaultAsync(g => g.Id == gameId);
             try
             {
-                if(await _context.Games.FirstOrDefaultAsync(g => g.Id == id) == null)
+                if(gameToRemove == null)
                 {
+                    response.Success = false;
+                    response.Message = "No game found with provided ID";
 
+                    return response;
                 }
-                _context.Games.Remove(await _context.Games.FirstOrDefaultAsync(g => g.Id == id));
+
+                if(gameToRemove.Creator != userId)
+                {
+                    response.Success = false;
+                    response.Message = "Game does not belong to user";
+
+                    return response;
+                }
+
+                _context.Games.Remove(gameToRemove);
 
                 await _context.SaveChangesAsync();
+
+                response.Data = gameToRemove.Id;
             }
             catch (Exception e)
             {
