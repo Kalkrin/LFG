@@ -18,7 +18,8 @@ namespace lfg
         public async Task<IActionResult> Register(UserAuthDto request)
         {
             ServiceResponse<int> response = await _UserRepository.Register(
-                new User { Username = request.Username, Email = request.Email, FirstName = request.FirstName, LastName = request.LastName }, request.Password
+                new User { Username = request.Username, Email = request.Email, FirstName = request.FirstName, LastName = request.LastName, 
+                ProfilePicture = request.ProfilePicture, Bio = request.Bio }, request.Password
             );
             if (!response.Success)
             {

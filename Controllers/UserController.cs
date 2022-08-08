@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace lfg
 {
     [ApiController]
-    [Route("[controller]")]
     [Authorize]
+    [Route("[controller]")]
     public class UserController : ControllerBase
     {
         private readonly UserRepository _UserRepository;
