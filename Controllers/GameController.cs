@@ -19,6 +19,7 @@ namespace lfg
         }
         
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetGames()
         {
             //Console.WriteLine(User.FindFirst(ClaimTypes.NameIdentifier).Value);
