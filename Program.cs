@@ -15,18 +15,19 @@ builder.Services.AddControllers().AddNewtonsoftJson(
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-builder.Services.AddDbContext<DataContext>(x => x.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+string azureCS = Environment.GetEnvironmentVariable("SQLCONNSTR_DefaultConnection");
+builder.Services.AddDbContext<DataContext>(x => x.UseSqlServer(azureCS is null ? builder.Configuration.GetConnectionString("DefaultConnection") : azureCS));
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<GameRepository>();
 builder.Services.AddScoped<RequestRepository>();
+string token = Environment.GetEnvironmentVariable("Token");
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(builder.Configuration.GetSection("AppSettings:Token").Value)),
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(token is null ? builder.Configuration.GetSection("AppSettings:Token").Value : token)),
                     ValidateIssuer = false,
                     ValidateAudience = false
                 };

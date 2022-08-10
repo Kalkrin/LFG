@@ -224,6 +224,7 @@ namespace lfg
 
         private string CreateToken(User user)
         {
+            string envToken = Environment.GetEnvironmentVariable("Token");
             List<Claim> claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -231,7 +232,7 @@ namespace lfg
             };
 
             SymmetricSecurityKey key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_configuration.GetSection("AppSettings:Token").Value)
+                Encoding.UTF8.GetBytes(envToken is null ? _configuration.GetSection("AppSettings:Token").Value : envToken)
             );
 
             SigningCredentials creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
