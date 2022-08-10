@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using lfg.Models;
+using LFG.Dtos.User;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,6 +60,26 @@ namespace lfg
             response = await _UserRepository.UpdateUser(id, updatedUser);
             
             if(!response.Success)
+                return BadRequest(response);
+
+            return Ok(response);
+        }
+
+        [HttpPut("UpdateUserPassword/{id}")]
+        public async Task<IActionResult> UpdateUserPassword([FromBody] UpdateUserPasswordDto updatePassword, int id)
+        {
+            ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
+
+            if (User.FindFirst(ClaimTypes.NameIdentifier).Value != id.ToString())
+            {
+                response.Success = false;
+                response.Message = "provided ID does not belong to the current user";
+                return BadRequest(response);
+            }
+
+            response = await _UserRepository.UpdateUserPassword(updatePassword, id);
+
+            if (!response.Success)
                 return BadRequest(response);
 
             return Ok(response);

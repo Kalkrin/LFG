@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Text;
 using lfg.Data;
 using lfg.Models;
+using LFG.Dtos.User;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -124,8 +125,6 @@ namespace lfg
 
         public async Task<ServiceResponse<PublicUserDto>> UpdateUser(int id, UpdateUserDto updatedUser)
         {
-            byte [] newHash = new byte [] {};
-            byte [] newSalt = new byte [] {};
             ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
             try
             {
@@ -137,19 +136,6 @@ namespace lfg
                     response.Success = false;
                     return response;
                 }
-
-                if(!VerifyPasswordHash(updatedUser.Password, userToUpdate.PasswordHash, userToUpdate.PasswordSalt))
-                {
-                    CreatePasswordHash(updatedUser.Password, out byte[] passwordHash, out byte[] passwordSalt);
-                    newHash = passwordHash;
-                    newSalt = passwordSalt;
-                }
-
-                if(newHash.Length != 0)
-                    userToUpdate.PasswordHash = newHash;
-                
-                if(newSalt.Length != 0)
-                userToUpdate.PasswordSalt = newSalt;
 
                 userToUpdate.Username = updatedUser.Username;
                 userToUpdate.Email = updatedUser.Email;
@@ -173,6 +159,54 @@ namespace lfg
             return response;
         }
 
+        public async Task<ServiceResponse<PublicUserDto>> UpdateUserPassword(UpdateUserPasswordDto updateUserPasswordDto, int id)
+        {
+            byte[] newHash = new byte[] { };
+            byte[] newSalt = new byte[] { };
+            ServiceResponse<PublicUserDto> response = new ServiceResponse<PublicUserDto>();
+            try
+            {
+                User userToUpdate = await _context.Users.FirstOrDefaultAsync(u => u.Id == id);
+
+                if (userToUpdate == null)
+                {
+                    response.Message = "User not found";
+                    response.Success = false;
+                    return response;
+                }
+                else if (!VerifyPasswordHash(updateUserPasswordDto.ExistingPassword, userToUpdate.PasswordHash, userToUpdate.PasswordSalt))
+                {
+                    response.Success = false;
+                    response.Message = "Wrong password";
+                    return response;
+                }
+
+                CreatePasswordHash(updateUserPasswordDto.NewPassword, out byte[] passwordHash, out byte[] passwordSalt);
+                newHash = passwordHash;
+                newSalt = passwordSalt;
+                
+
+                if (newHash.Length != 0)
+                    userToUpdate.PasswordHash = newHash;
+
+                if (newSalt.Length != 0)
+                    userToUpdate.PasswordSalt = newSalt;
+
+                userToUpdate.LastUpdated = DateTime.Now;
+
+                _context.Users.Update(userToUpdate);
+                await _context.SaveChangesAsync();
+
+                response.Data = MapUserToPublicUser(userToUpdate);
+            }
+            catch (Exception e)
+            {
+                response.Success = false;
+                response.Message = e.Message;
+            }
+
+            return response;
+        }
         public async Task<ServiceResponse<int>> DeleteUser(int id)
         {
             ServiceResponse<int> response = new ServiceResponse<int>();
