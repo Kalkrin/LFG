@@ -136,6 +136,12 @@ namespace lfg
                     response.Success = false;
                     return response;
                 }
+                if (await UserExists(updatedUser.Username))
+                {
+                    response.Success = false;
+                    response.Message = "User Already Exists";
+                    return response;
+                }
 
                 userToUpdate.Username = updatedUser.Username;
                 userToUpdate.Email = updatedUser.Email;
