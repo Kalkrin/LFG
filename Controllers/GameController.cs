@@ -66,9 +66,7 @@ namespace lfg
 
             int userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
-            updatedGame.Id = id;
-
-            response = await _GameRepository.UpdateGame(updatedGame, userId);
+            response = await _GameRepository.UpdateGame(updatedGame, userId, id);
 
             if(response.Success)
                 return Ok(response);

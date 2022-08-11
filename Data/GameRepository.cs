@@ -93,13 +93,13 @@ namespace lfg.Data
             return response;
         }
 
-        public async Task<ServiceResponse<PublicGameDto>> UpdateGame(UpdateGameDto updatedGame, int currentUserId)
+        public async Task<ServiceResponse<PublicGameDto>> UpdateGame(UpdateGameDto updatedGame, int currentUserId, int gameId)
         {
             ServiceResponse<PublicGameDto> response = new ServiceResponse<PublicGameDto>();
 
             try
             {
-                Game gameToUpdate = await _context.Games.Include(g => g.Players).FirstOrDefaultAsync(g => g.Id == updatedGame.Id);
+                Game gameToUpdate = await _context.Games.Include(g => g.Players).FirstOrDefaultAsync(g => g.Id == gameId);
 
                 if(gameToUpdate == null)
                 {
