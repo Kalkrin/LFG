@@ -108,7 +108,7 @@ namespace lfg.Data
                     return response;
                 }
 
-                if(currentUserId != gameToUpdate.Creator){
+                if(currentUserId != gameToUpdate.Creator && updatedGame.PlayersToRemove.Count() == 0){
                     response.Success = false;
                     response.Message = "Game does not belong to the user currently signed in.";
                     return response;

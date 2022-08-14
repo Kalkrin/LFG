@@ -129,7 +129,7 @@ namespace lfg
                     return response;
                 }
 
-                if(await _context.Requests.FirstOrDefaultAsync(r => r.Requestor == requestToCreate.Requestor && r.Game == requestToCreate.Game) != null)
+                if(await _context.Requests.FirstOrDefaultAsync(r => r.Requestor == requestToCreate.Requestor && r.Game == requestToCreate.Game && r.Status == Status.Undecided) != null)
                 {
                     response.Message = "Already a request for this user to join this game.";
                     response.Success = false;
